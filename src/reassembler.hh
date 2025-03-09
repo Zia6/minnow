@@ -1,13 +1,26 @@
 #pragma once
 
 #include "byte_stream.hh"
-
+#include <queue>
+#include <vector>
 class Reassembler
 {
 public:
+struct message{
+  uint64_t index;
+  std::string data;
+  bool is_last_substring;
+  bool operator<(const message& other) const {
+    return this->index > other.index;
+    }
+};
   // Construct Reassembler to write into given ByteStream.
   explicit Reassembler( ByteStream&& output ) : output_( std::move( output ) ) {}
-
+  std::priority_queue<message> bytes_accept {
+  std::priority_queue<message>()
+};
+  uint64_t last = 0;
+  uint64_t count = 0;
   /*
    * Insert a new substring to be reassembled into a ByteStream.
    *   `first_index`: the index of the first byte of the substring
