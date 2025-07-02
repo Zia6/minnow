@@ -10,7 +10,7 @@ void Writer::push( string data )
   if ( closed_ ) {
     return;
   }
-  uint64_t bytes = std::min( data.size(), capacity_ - buffer_.size() );
+  uint64_t bytes = std::min( (unsigned long long)data.size(), capacity_ - buffer_.size() );
   bytes_pushed_ += bytes;
   buffer_.insert( buffer_.end(), data.begin(), data.begin() + bytes ); // 插入数据
 }
@@ -45,7 +45,7 @@ std::string_view Reader::peek() const
 
 void Reader::pop( uint64_t len )
 {
-  uint64_t bytes = std::min( len, buffer_.size() );
+  uint64_t bytes = std::min( len, (unsigned long long )buffer_.size() );
   buffer_.erase( buffer_.begin(), buffer_.begin() + bytes ); // 移除数据
 }
 
