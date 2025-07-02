@@ -1,5 +1,6 @@
 #include "byte_stream.hh"
 #include "exception.hh"
+#include "debug.hh"
 #include <deque>
 using namespace std;
 
@@ -10,7 +11,8 @@ void Writer::push( string data )
   if ( closed_ ) {
     return;
   }
-  uint64_t bytes = std::min( (unsigned long long)data.size(), capacity_ - buffer_.size() );
+  uint64_t bytes = std::min( data.size(), capacity_ - buffer_.size() );
+  // debug("bytes {}\n",bytes);
   bytes_pushed_ += bytes;
   buffer_.insert( buffer_.end(), data.begin(), data.begin() + bytes ); // 插入数据
 }
@@ -32,6 +34,7 @@ uint64_t Writer::available_capacity() const
 
 uint64_t Writer::bytes_pushed() const
 {
+  debug("bytes_pushed_ {}",bytes_pushed_);
   return bytes_pushed_;
 }
 
@@ -45,7 +48,7 @@ std::string_view Reader::peek() const
 
 void Reader::pop( uint64_t len )
 {
-  uint64_t bytes = std::min( len, (unsigned long long )buffer_.size() );
+  uint64_t bytes = std::min( len, buffer_.size() );
   buffer_.erase( buffer_.begin(), buffer_.begin() + bytes ); // 移除数据
 }
 

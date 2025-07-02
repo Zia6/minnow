@@ -11,7 +11,7 @@ public:
     uint64_t index;
     std::string data;
     bool is_last_substring;
-    bool operator<( const message& other ) const { return this->index > other.index; }
+    bool operator<( const message& other ) const { return this->index < other.index; }
   };
   // Construct Reassembler to write into given ByteStream.
   explicit Reassembler( ByteStream&& output ) : output_( std::move( output ) ) {}
@@ -42,10 +42,12 @@ public:
 
   void transport();
 
-  void insert_to_buffer(uint64_t first_index, std::string& data, bool is_last_substring);
+  void insert_to_buffer(uint64_t first_index, std::string data, bool is_last_substring);
   // How many bytes are stored in the Reassembler itself?
   // This function is for testing only; don't add extra state to support it.
   uint64_t count_bytes_pending() const;
+
+  void clean();
 
   // Access output stream reader
   Reader& reader() { return output_.reader(); }
