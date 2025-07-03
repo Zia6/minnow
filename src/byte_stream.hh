@@ -23,7 +23,7 @@ public:
 
 protected:
   // Please add any additional state to the ByteStream here, and not to the Writer and Reader interfaces.
-  std::deque<char> buffer_ { std::deque<char>() };
+  std::string buffer_ = std::string();
   uint64_t bytes_pushed_ { 0 };
   bool closed_ { false };
   uint64_t capacity_;

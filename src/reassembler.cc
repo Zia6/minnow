@@ -43,7 +43,6 @@ void Reassembler::transport()
     if ( output_.writer().is_closed() ) {
       return;
     }
-    debug( "push {}", it->data );
     uint64_t cnt = std::min( it->data.size(), output_.writer().available_capacity() );
     last += cnt;
     output_.writer().push( it->data );
@@ -64,22 +63,20 @@ void Reassembler::insert_to_buffer( uint64_t first_index, string data, bool is_l
     now.data = data.substr( last - first_index, data.size() - last + first_index );
     now.index = last;
   }
+  if(bytes_accept.empty()){
+    bytes_accept.insert(now);
+    return;
+  }
   auto s = bytes_accept.lower_bound( { first_index, "", false } ),
        e = bytes_accept.upper_bound( { first_index + data.size(), "", false } );
-  if ( !bytes_accept.empty() && s != bytes_accept.begin() ) {
+  if ( !bytes_accept.empty() && s != bytes_accept.begin() && intersect( *std::prev(s), now )) {
     s--;
-  }
-  if ( s != bytes_accept.end() && !intersect( *s, now ) ) {
-    s++;
   }
   for ( auto it = s; it != e; it++ ) {
     now = merge( *it, now );
   }
   bytes_accept.erase( s, e );
   bytes_accept.insert( now );
-  for ( auto q : bytes_accept ) {
-    debug( "第{}个 is {}\n", q.index, q.data );
-  }
 }
 
 void Reassembler::clean()
@@ -97,10 +94,6 @@ void Reassembler::clean()
     bytes_accept.insert( temp );
   } else
     bytes_accept.erase( s, bytes_accept.end() );
-  for ( auto now : bytes_accept ) {
-    debug( "clean 第{}个 is {}\n", now.index, now.data );
-  }
-  debug( "remain {}", bytes_accept.size() );
 }
 void Reassembler::insert( uint64_t first_index, string data, bool is_last_substring )
 {
