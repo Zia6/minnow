@@ -42,13 +42,12 @@ public:
 
   void transport();
 
-  void insert_to_buffer(uint64_t first_index, std::string data, bool is_last_substring);
+  void insert_to_buffer( uint64_t first_index, std::string data, bool is_last_substring );
   // How many bytes are stored in the Reassembler itself?
   // This function is for testing only; don't add extra state to support it.
   uint64_t count_bytes_pending() const;
 
   void clean();
-
   // Access output stream reader
   Reader& reader() { return output_.reader(); }
   const Reader& reader() const { return output_.reader(); }

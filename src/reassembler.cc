@@ -46,6 +46,7 @@ void Reassembler::transport()
     uint64_t cnt = std::min( it->data.size(), output_.writer().available_capacity() );
     last += cnt;
     output_.writer().push( it->data );
+    debug( "writer push {}", it->data );
     if ( it->is_last_substring && cnt == it->data.size() ) {
       output_.writer().close();
     }
@@ -56,20 +57,20 @@ void Reassembler::transport()
 void Reassembler::insert_to_buffer( uint64_t first_index, string data, bool is_last_substring )
 {
   message now = { first_index, data, is_last_substring };
-  if (first_index + data.size() < last ) {
+  if ( first_index + data.size() < last ) {
     return;
   }
   if ( first_index < last ) {
     now.data = data.substr( last - first_index, data.size() - last + first_index );
     now.index = last;
   }
-  if(bytes_accept.empty()){
-    bytes_accept.insert(now);
+  if ( bytes_accept.empty() ) {
+    bytes_accept.insert( now );
     return;
   }
   auto s = bytes_accept.lower_bound( { first_index, "", false } ),
        e = bytes_accept.upper_bound( { first_index + data.size(), "", false } );
-  if ( !bytes_accept.empty() && s != bytes_accept.begin() && intersect( *std::prev(s), now )) {
+  if ( !bytes_accept.empty() && s != bytes_accept.begin() && intersect( *std::prev( s ), now ) ) {
     s--;
   }
   for ( auto it = s; it != e; it++ ) {
