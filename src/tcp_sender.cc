@@ -1,21 +1,20 @@
 #include "tcp_sender.hh"
 #include "debug.hh"
 #include "tcp_config.hh"
-
 using namespace std;
 
 // This function is for testing only; don't add extra state to support it.
 uint64_t TCPSender::sequence_numbers_in_flight() const
 {
   // debug( "unimplemented sequence_numbers_in_flight() called" );
-  return {sequences_in_flight.size()};
+  return sequences_in_flight.size();
 }
 
 // This function is for testing only; don't add extra state to support it.
 uint64_t TCPSender::consecutive_retransmissions() const
 {
   debug( "unimplemented consecutive_retransmissions() called" );
-  return {sequences_in_flight.front().count};
+  return sequences_in_flight.front().count;
 }
 
 void TCPSender::push( const TransmitFunction& transmit )
@@ -30,7 +29,7 @@ void TCPSender::push( const TransmitFunction& transmit )
   while(next_seqno_ < first_index_ + window_size_ && !reader().is_finished()){
     uint64_t length = std::min(first_index_ + window_size_ - next_seqno_,reader().bytes_buffered());
     length = std::min(length,(uint64_t)TCPConfig::MAX_PAYLOAD_SIZE);
-    if(!fin_ && reader().is_finished() && next_seqno_ + length < first_index + window_size_){
+    if(!fin_ && reader().is_finished() && next_seqno_ + length < first_index_ + window_size_){
       fin_ = true;
     }
     string payload;
@@ -63,7 +62,7 @@ void TCPSender::receive( const TCPReceiverMessage& msg )
   uint64_t ackno = msg.ackno.value().unwrap(isn_,first_index_);
   while(!sequences_in_flight.empty()){
     uint64_t l = sequences_in_flight.front().msg.seqno.unwrap(isn_,first_index_);
-    if(l + sequences_in_flight.front().msg.sequence_length() < ackno){
+    if(l + sequences_in_flight.front().msg.sequence_length() <= ackno){
       first_index_ += sequences_in_flight.front().msg.sequence_length();
       sequences_in_flight.pop();
       continue;

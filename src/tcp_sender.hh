@@ -3,7 +3,7 @@
 #include "byte_stream.hh"
 #include "tcp_receiver_message.hh"
 #include "tcp_sender_message.hh"
-
+#include <queue>
 #include <functional>
 
 struct Sequence_in_flight{
@@ -47,6 +47,7 @@ private:
   uint64_t first_index_  = 0;
   uint64_t window_size_ = 0;
   uint64_t next_seqno_ = 0;
+  uint64_t now = 0;
   bool fin_ = false;
   ByteStream input_;
   Wrap32 isn_;
