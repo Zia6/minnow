@@ -3,6 +3,29 @@
 #include "tcp_config.hh"
 using namespace std;
 
+
+class TCPSender::Timer{
+private:
+  uint64_t RTO_ms_ = 0;
+  uint64_t elapsed_ms_ = 0;
+  bool active_ = false;
+public:
+  void start(uint64_t RTO_ms){
+    active_ = true;
+    RTO_ms_ = RTO_ms;
+    elapsed_ms_ = 0;
+  }
+  void stop(){
+    active_ = false;
+  }
+  void tick(uint64_t ms){
+    if(active_) elapsed_ms_ += ms;
+  }
+  bool expired() const {
+    return active_ && elapsed_ms_ >= RTO_ms_;
+  }
+};
+
 // This function is for testing only; don't add extra state to support it.
 uint64_t TCPSender::sequence_numbers_in_flight() const
 {
@@ -25,6 +48,7 @@ void TCPSender::push( const TransmitFunction& transmit )
     messages.push_back(message_syn);
     sequences_in_flight.push({message_syn,0});
     next_seqno_ += message_syn.sequence_length();
+    RTO_ms_ = initial_RTO_ms_;
   }
   while(next_seqno_ < first_index_ + window_size_ && !reader().is_finished()){
     uint64_t length = std::min(first_index_ + window_size_ - next_seqno_,reader().bytes_buffered());
@@ -44,6 +68,8 @@ void TCPSender::push( const TransmitFunction& transmit )
     TCPSenderMessage message_fin = {isn_.wrap(next_seqno_,isn_),false,"",fin_,false};
     next_seqno_ += message_fin.sequence_length();
   }
+  if(!messages.empty())
+  timer_.start(RTO_ms_);
   for(auto& msg: messages){
     transmit(msg);
   }
@@ -60,6 +86,7 @@ TCPSenderMessage TCPSender::make_empty_message() const
 void TCPSender::receive( const TCPReceiverMessage& msg )
 {
   uint64_t ackno = msg.ackno.value().unwrap(isn_,first_index_);
+  RTO_ms_ = initial_RTO_ms_;
   while(!sequences_in_flight.empty()){
     uint64_t l = sequences_in_flight.front().msg.seqno.unwrap(isn_,first_index_);
     if(l + sequences_in_flight.front().msg.sequence_length() <= ackno){
@@ -75,6 +102,17 @@ void TCPSender::receive( const TCPReceiverMessage& msg )
 
 void TCPSender::tick( uint64_t ms_since_last_tick, const TransmitFunction& transmit )
 {
-  debug( "unimplemented tick({}, ...) called", ms_since_last_tick );
-  (void)transmit;
+
+  timer_.tick(ms_since_last_tick);
+  if(timer_.expired() && !sequences_in_flight.empty()){
+    //重传
+    transmit(sequences_in_flight.front().msg);
+    if(window_size_ > 0){
+      sequences_in_flight.front().count++;
+      RTO_ms_ *= 2;
+    }
+    timer_.start(RTO_ms_);
+  }
+  // debug( "unimplemented tick({}, ...) called", ms_since_last_tick );
+  // (void)transmit;
 }
