@@ -6,12 +6,6 @@
 #include <functional>
 #include <queue>
 
-struct Sequence_in_flight
-{
-  TCPSenderMessage msg;
-  uint64_t count;
-};
-
 class TCPSender
 {
 public:
@@ -44,7 +38,7 @@ public:
 
 private:
   Reader& reader() { return input_.reader(); }
-  std::queue<Sequence_in_flight> sequences_in_flight = std::queue<Sequence_in_flight>();
+  std::queue<TCPSenderMessage> sequences_in_flight = std::queue<TCPSenderMessage>();
   uint64_t first_index_ = 0;
   uint64_t window_size_ = 0;
   uint64_t next_seqno_ = 0;
@@ -53,6 +47,7 @@ private:
   Wrap32 isn_;
   uint64_t initial_RTO_ms_;
   uint64_t RTO_ms_;
+  uint64_t consecutive_retransmissions_ = 0;
   class Timer
   {
   private:
