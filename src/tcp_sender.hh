@@ -3,13 +3,8 @@
 #include "byte_stream.hh"
 #include "tcp_receiver_message.hh"
 #include "tcp_sender_message.hh"
-
 #include <functional>
-
-struct Sequence_in_flight{
-  TCPSenderMessage msg;
-  uint64_t count;
-};
+#include <queue>
 
 class TCPSender
 {
@@ -43,12 +38,41 @@ public:
 
 private:
   Reader& reader() { return input_.reader(); }
-  std::queue<Sequence_in_flight> sequences_in_flight = std::queue<Sequence_in_flight>();
-  uint64_t first_index_  = 0;
+  std::queue<TCPSenderMessage> sequences_in_flight = std::queue<TCPSenderMessage>();
+  uint64_t first_index_ = 0;
   uint64_t window_size_ = 0;
   uint64_t next_seqno_ = 0;
   bool fin_ = false;
   ByteStream input_;
   Wrap32 isn_;
   uint64_t initial_RTO_ms_;
+  uint64_t RTO_ms_ = 0;
+  uint64_t consecutive_retransmissions_ = 0;
+  uint64_t sequences_in_flight_count_ = 0;
+  bool syn_ = false;
+  class Timer
+  {
+  private:
+    uint64_t RTO_ms_ = 0;
+    uint64_t elapsed_ms_ = 0;
+    bool active_ = false;
+  public:
+    void start( uint64_t RTO_ms )
+    {
+      active_ = true;
+      RTO_ms_ = RTO_ms;
+      elapsed_ms_ = 0;
+    }
+    void stop() { active_ = false; }
+    void tick( uint64_t ms )
+    {
+      if ( active_ )
+        elapsed_ms_ += ms;
+    }
+    bool expired() const { return active_ && elapsed_ms_ >= RTO_ms_; }
+    bool is_active(){
+      return active_;
+    }
+  };
+  Timer timer_ = {};
 };

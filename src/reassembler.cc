@@ -71,11 +71,12 @@ void Reassembler::insert_to_buffer( uint64_t first_index, string data, bool is_l
   auto s = bytes_accept.lower_bound( { first_index, "", false } ),
        e = bytes_accept.upper_bound( { first_index + data.size(), "", false } );
   if ( !bytes_accept.empty() && s != bytes_accept.begin() && intersect( *std::prev( s ), now ) ) {
-    s--;
+    s = std::prev(s);
   }
   for ( auto it = s; it != e; it++ ) {
     now = merge( *it, now );
   }
+  if(s != bytes_accept.end())
   bytes_accept.erase( s, e );
   bytes_accept.insert( now );
 }
