@@ -46,8 +46,10 @@ private:
   ByteStream input_;
   Wrap32 isn_;
   uint64_t initial_RTO_ms_;
-  uint64_t RTO_ms_;
+  uint64_t RTO_ms_ = 0;
   uint64_t consecutive_retransmissions_ = 0;
+  uint64_t sequences_in_flight_count_ = 0;
+  bool syn_ = false;
   class Timer
   {
   private:
@@ -68,6 +70,9 @@ private:
         elapsed_ms_ += ms;
     }
     bool expired() const { return active_ && elapsed_ms_ >= RTO_ms_; }
+    bool is_active(){
+      return active_;
+    }
   };
-  Timer timer_;
+  Timer timer_ = {};
 };
